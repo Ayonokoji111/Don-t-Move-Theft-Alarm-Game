@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>Don't Move! — Theft Alarm Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar"><div class="brand-mark" aria-hidden="true">!</div><span>PHONE SAFETY LAB</span><span class="project-tag">Student project</span></header>
+    <section class="hero"><p class="eyebrow">MOTION DETECTION GAME</p><h1>Don't Move<span>!</span></h1><p class="subtitle">Stay still. Beat the timer. Don't get caught!</p></section>
+    <section class="status-row" aria-label="Connection status">
+      <div class="status-card"><span class="status-dot" id="connectionDot"></span><div><small>SENSOR CONNECTION</small><strong id="connectionStatus">Checking bridge…</strong></div></div>
+      <div class="status-card"><span class="status-icon" aria-hidden="true">◎</span><div><small>ROUND STATUS</small><strong id="roundStatus">Ready when you are</strong></div></div>
+    </section>
+    <section class="game-card">
+      <div class="game-top"><div><p class="eyebrow">YOUR SURVIVAL TIME</p><div class="timer" id="timer" aria-live="polite">30<span>s</span></div></div><div class="intensity-wrap"><div class="intensity-heading"><span>Movement</span><strong id="intensityLabel">Waiting</strong></div><div class="meter"><div id="intensityBar"></div></div><small id="intensityValue">No live readings</small></div></div>
+      <div class="progress-track"><div id="roundProgress"></div></div>
+      <div class="controls"><div class="duration-group" role="group" aria-label="Round duration"><button class="choice" data-duration="15">15 sec</button><button class="choice selected" data-duration="30">30 sec</button><button class="choice" data-duration="60">60 sec</button></div><div class="action-row"><button class="button button-primary" id="startButton">Start Game</button><button class="button button-secondary" id="stopButton" disabled>Stop</button><button class="button button-quiet" id="resetButton">Reset</button></div></div>
+      <div class="settings-row"><label for="sensitivity">Movement sensitivity <span id="sensitivityLabel">Normal</span></label><input id="sensitivity" type="range" min="1" max="3" value="2"><div class="range-labels"><span>Forgiving</span><span>Strict</span></div><label class="sound-toggle"><input type="checkbox" id="soundToggle" checked><span class="switch"></span> Alarm sound</label></div>
+      <div class="result-panel" id="resultPanel" role="status" aria-live="assertive"><div class="result-symbol" id="resultSymbol">↗</div><div><strong id="resultTitle">Place your phone on a stable surface</strong><p id="resultMessage">A live connection is required before a round can start.</p></div></div>
+      <div class="error-panel" id="errorPanel" hidden><strong>Connection needs attention</strong><p id="errorMessage"></p><p>Check that your phone and Mac are on the same Wi-Fi, Streams is running, and your session ID is configured in <code>.env</code>.</p></div>
+    </section>
+    <section class="lower-grid"><article class="panel"><div class="panel-title"><span class="panel-icon">▦</span><div><h2>Live sensors</h2><p>Phone readings · acceleration in m/s² · rotation in rad/s</p></div></div><div class="sensor-grid"><div class="sensor-reading"><span>ACCELEROMETER</span><strong id="accelReading">—</strong></div><div class="sensor-reading"><span>GYROSCOPE</span><strong id="gyroReading">—</strong></div><div class="sensor-reading"><span>LINEAR ACCEL.</span><strong id="linearReading">—</strong></div></div><div class="calibration-row"><span class="calibration-icon">◉</span><div><strong id="calibrationStatus">Calibration not started</strong><small id="calibrationDetail">Resting noise is measured before each round.</small></div></div></article><article class="panel score-panel"><div class="panel-title"><span class="panel-icon">✦</span><div><h2>Your record</h2><p>This device</p></div></div><div class="score-number" id="bestScore">0<span>s</span></div><small>Best survival time</small><div class="score-divider"></div><p class="score-note" id="roundResult">No round completed yet</p></article></section>
+    <section class="instructions"><div class="instruction-heading"><span>HOW TO PLAY</span><span class="instruction-line"></span></div><div class="steps"><div class="step"><span>01</span><p>Connect your phone in Nikki Streams and place it flat on a steady table.</p></div><div class="step"><span>02</span><p>Choose a time and press Start. Stay still during the short calibration.</p></div><div class="step"><span>03</span><p>Keep the phone still until time runs out. Any sustained movement ends the round.</p></div></div></section>
+    <footer>Motion readings stay on your local network. This demo is for learning, not guaranteed theft protection.</footer>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>

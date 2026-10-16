@@ -1,0 +1,2 @@
+nikki-streams>=1.0.3,<2.0
+websockets>=15.0,<16.0
