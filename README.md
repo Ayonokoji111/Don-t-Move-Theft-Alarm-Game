@@ -1,120 +1,173 @@
- Don't Move! — Theft Alarm Game
+# Don't Move! Theft Alarm Game
 
-A motion-detection game that connects a phone running the nikki Streams app to a web dashboard. The game receives real motion sensor readings, calibrates the phone while it is resting on a table, and compares movement against configurable thresholds. If the phone moves beyond the threshold, a funny alarm plays and the player loses. If the phone remains sufficiently still until the countdown ends, the player wins.
+A phone-motion game for Android and a computer. Keep the phone still until the timer ends. If it moves, the round ends and the browser can play an alarm.
 
- Run it
+This is a learning project, not a real security alarm.
 
-1. Prepare the phone - 
-In the nikki Streams app, create or open your session and connect your Android phone. Enable the Accelerometer, Gyroscope, and Linear Acceleration sensors. Enable Orientation if the implementation uses it. Keep the phone and computer on the same local network. Use the current WebSocket address shown in Streams. The currently configured address is `IP:PORT`; it may change when the network changes, so update the configuration if necessary.
+## Run it
 
-2. Install Python and dependencies - 
-Install Python 3.10 or newer. Open a terminal in this project folder and create a virtual environment.
+1. Download or copy all project files into one folder. Open that folder in VS Code. Open a terminal in the same folder.
+2. Install Python 3.10 or newer. Python 3.12 is recommended.
+3. Create a virtual environment and install the packages.
 
-   macOS:
-   In bash
-   python3 -m venv .venv
+   **macOS or Linux:**
+
+   ```sh
+   python3.12 -m venv .venv
    source .venv/bin/activate
+   python -m pip install --upgrade pip
    python -m pip install -r requirements.txt
-   
+   cp .env.example .env
+   ```
 
-   Windows PowerShell:
-   In powershell
-   py -m venv .venv
+   Run the copy command only if `.env` does not already exist. It can replace your saved settings.
+
+   **Windows PowerShell:**
+
+   ```powershell
+   py -3.12 -m venv .venv
    .\.venv\Scripts\Activate.ps1
-   py -m pip install -r requirements.txt
-   
+   python -m pip install --upgrade pip
+   python -m pip install -r requirements.txt
+   Copy-Item .env.example .env
+   ```
 
-3. Configure the Streams connection. Set `NIKKI_SESSION_ID` to the session ID from your Streams app and `PHONE_ADDRESS` to the current Streams host and port. Keep your session ID private; do not commit it to GitHub.
+   Run the copy command only if `.env` does not already exist. Keep the file private.
 
-   macOS:
-   In bash
-   export NIKKI_SESSION_ID="YOUR_STREAMS_SESSION_ID"
-   export PHONE_ADDRESS="IP:PORT"
-   
+   If PowerShell blocks activation, use Command Prompt instead:
 
-   Windows PowerShell:
-   In powershell
-   $env:NIKKI_SESSION_ID = "YOUR_STREAMS_SESSION_ID"
-   $env:PHONE_ADDRESS = "IP:PORT"
-   
+   ```bat
+   .venv\Scripts\activate.bat
+   ```
 
-   These commands configure the values for the current terminal session. Follow the actual configuration options implemented in `sensor_bridge.py` if they differ.
+4. Open `.env` in VS Code. Enter your real Nikki Streams session ID and the phone's current address and port:
 
-4. Start the sensor bridge.From the project folder, run:
+   ```dotenv
+   NIKKI_SESSION_ID=your_session_id
+   NIKKI_PHONE_ADDRESS=192.168.29.101:3000
+   ```
 
-   In bash
+   The address above is the one currently shown in the project configuration. Phone addresses can change, so check Nikki Streams and update it if needed. Keep your session ID private. The `.gitignore` file excludes `.env`.
+
+5. On the Android phone, open Nikki Streams, start its Streams server, and enable these sensors:
+   - Accelerometer
+   - Gyroscope
+   - Linear Acceleration
+
+   The game does not use GPS, microphone, camera, NFC, or the other listed sensors. Keep the phone and computer on the same Wi-Fi network.
+
+6. In the terminal with the virtual environment active, start the bridge:
+
+   ```sh
    python sensor_bridge.py
-   
+   ```
 
-   Keep the terminal open while playing. The bridge must successfully connect to nikki Streams and provide valid sensor readings to the game. If your implementation uses a different startup command or requires a separate web server, follow the commands in the project files.
+   Leave the terminal open. On the same computer, open <http://127.0.0.1:8000> in a browser. Wait for the page to show a phone connection and live readings before starting a round. The browser page is served on the computer; it is not set up to open directly on the phone.
 
-5. Open the game. Open `index.html` using the serving method documented in the project. If the frontend uses a local HTTP server, open a second terminal and run:
+7. Choose 15, 30, or 60 seconds. The default is 30 seconds. Put the phone on a stable surface and press **Start Game**. Press **Stop** to end a round early, or **Reset** to prepare for another round. To stop the bridge, return to the terminal and press **Ctrl+C**.
 
-   In bash
-   python3 -m http.server 8080
-   
+If you change `.env`, stop and restart the bridge so it loads the new settings.
 
-   Then open [http://localhost:8080](http://localhost:8080) on your computer.
+## How it works
 
-   To access the dashboard on your Android phone, use your computer's current Wi-Fi IPv4 address, for example `http://YOUR-COMPUTER-IP:8080`, if the network and browser configuration permit it. Ensure the browser's WebSocket URL matches the actual bridge address and port. Do not assume that the example URL works without checking the implemented configuration.
+```text
+Android phone sensors
+        ↓
+Nikki Streams app and server
+        ↓
+nikki-streams Python SDK
+        ↓
+sensor_bridge.py
+        ↓
+Local WebSocket at 127.0.0.1:8765
+        ↓
+Browser game at http://127.0.0.1:8000
+```
 
-6. Play the game. Confirm the sensor connection is active, place the phone on a stable surface, and press Start Game. Wait for calibration to finish. Keep the phone still until the selected timer reaches zero. Moving the phone beyond the configured threshold triggers the loss state and alarm. Use Stop Game or Reset Game to end or restart a round.
+The bridge uses the SDK to connect to the phone. In simplified form, the connection is:
 
- How it works
+```python
+SDK.initialize(SESSION_ID)
+device = SDK.create_device(PHONE_ADDRESS, sdk_callback)
+await device.connect()
+```
 
+The session ID is read from `.env`; it is not written in the browser code. The bridge sends valid sensor readings to the browser as JSON, for example:
 
-Android phone motion sensors
-             ↓
-       nikki Streams
-             ↓
-    Python SDK callback
-             ↓
-   Sensor data validation
-             ↓
- Calibration and noise filtering
-             ↓
-  Movement threshold comparison
-             ↓
-       Game state logic
-          ↙       ↘
-   Phone stayed   Movement
-       still      detected
-          ↓          ↓
-      Player wins  Play alarm
-                   Player loses
-             ↓
-        Web dashboard
+```json
+{
+  "type": "sensor",
+  "timestamp": 1234567890,
+  "accel": [0.02, -0.06, 9.81],
+  "gyro": [0.0, 0.0, 0.0],
+  "linearAcceleration": [0.0, 0.0, 0.0]
+}
+```
 
+The values above only show the message format. The bridge does not make up readings. It sends readings received from Nikki Streams after checking that the sensor values are valid.
 
-The Python bridge uses the nikki Streams SDK to initialize a session, connect to the phone, and receive sensor events. The JavaScript frontend receives sensor data from the bridge and processes it for the game.
+### Calibration and movement
 
-The game uses Linear Acceleration as the primary movement signal where available. The Accelerometer provides acceleration measurements that may include gravity, while the Gyroscope measures rotation rate. Orientation can provide additional information about changes in the phone's position.
+When a round starts, the game collects live readings for about 1.8 seconds while the phone is still. It needs at least five valid readings to set a starting point. Linear acceleration is the main movement signal. The game also checks the gyroscope and accelerometer when those readings are available.
 
-During calibration, the game collects resting readings and establishes a baseline. It then compares incoming readings against configurable movement thresholds. Noise filtering and a short persistence interval help reduce false alarms caused by minor sensor fluctuations.
+The accelerometer includes gravity, even when the phone is still. The game compares it with the starting reading instead of treating gravity itself as movement. The gyroscope measures turning speed. Linear acceleration measures movement without gravity.
 
-The default round duration is 30 seconds, with additional duration options available in the interface if implemented. If movement exceeds the configured threshold, the game transitions to the loss state and plays a funny alarm using the browser's audio capabilities. If the timer finishes while the sensor connection remains valid and no qualifying movement has occurred, the player wins.
+The game calculates a movement score by comparing each new reading with the starting values. It uses the highest available score. The default sensitivity is **Normal**. The other choices are **Forgiving** and **Strict**. The thresholds are starting values and may need adjustment for a different phone or surface:
 
-Sensor disconnection, stale readings, invalid data, and connection failures must be reported as errors rather than treated as wins. Exact sensor fields, thresholds, bridge URLs, and retry behaviour depend on the implementation in `sensor_bridge.py` and `script.js`.
+| Sensitivity | Linear acceleration | Gyroscope | Accelerometer |
+| --- | ---: | ---: | ---: |
+| Forgiving | 2.2 m/s² | 1.0 rad/s | 3.2 m/s² |
+| Normal | 1.25 m/s² | 0.65 rad/s | 2.1 m/s² |
+| Strict | 0.72 m/s² | 0.36 rad/s | 1.25 m/s² |
 
- Features
+The game adjusts these thresholds using the noise measured during calibration. Movement must pass a threshold for about 260 milliseconds to end the round. Readings older than 1.6 seconds are treated as stale.
 
-- Live motion sensor readings.
-- Sensor connection status.
-- Initial sensor calibration.
-- Configurable movement sensitivity.
-- Countdown timer and multiple round durations.
-- Movement-triggered alarm and loss state.
-- Stillness-based win condition.
-- Stop and reset controls.
-- Error handling for sensor and connection failures.
-- Responsive dashboard for desktop and Android browsers.
+A simplified part of the score calculation is:
 
-Notes and limitations
+```javascript
+const linearDelta = distance(reading.linear, state.baseline.linear);
+const gyroSpeed = magnitude(reading.gyro);
+const accelDelta = distance(reading.accel, state.baseline.accel);
 
-- The phone and computer must be able to communicate with the nikki Streams server.
-- The Streams session ID is required if the SDK uses session-based initialization.
-- The configured IP address may change when the network changes.
-- Browser access to the game and the bridge must satisfy the relevant network and browser security requirements.
-- Sensor readings vary between devices, so movement thresholds may need adjustment.
+const components = [];
+if (linearDelta !== null && state.baseline.linear) {
+  components.push(linearDelta / Math.max(t.linear, state.calibrationNoise * 4));
+}
+if (gyroSpeed !== null && state.baseline.gyro) {
+  components.push(gyroSpeed / Math.max(t.gyro, state.gyroNoise * 4));
+}
+if (accelDelta !== null && state.baseline.accel) {
+  components.push(accelDelta / Math.max(t.accel, state.accelNoise * 4));
+}
 
-For setup details, see `PYTHON_SETUP.md`. For test cases and recorded results, see `TESTING.md`.
+return Math.max(0, ...components);
+```
+
+The actual code also adjusts thresholds using the noise measured during calibration.
+
+### Timer, results, and sound
+
+The timer starts after calibration. It uses elapsed time, so small delays in browser updates do not make the round longer or shorter. If the full timer ends while valid readings are still arriving, the player wins. If movement passes the threshold long enough, the player loses. A lost or disconnected sensor stops the round with an error; it cannot count as a win.
+
+The alarm is generated by the browser with the Web Audio API after the player presses **Start Game**. It plays once on a loss. Use the sound switch to mute it. A sound problem does not change the result of the round. The best time is saved in that browser on that computer.
+
+## Network and local ports
+
+The Python bridge serves the page at `127.0.0.1:8000` and accepts the browser connection at `127.0.0.1:8765`. Both addresses are limited to the computer running the program. The bridge connects outward to the phone address in `.env`.
+
+Use the browser on the same computer as the bridge. On a phone, `127.0.0.1` means the phone itself, not the computer.
+
+## Troubleshooting
+
+- **The page does not open:** Make sure `python sensor_bridge.py` is still running. If a port is already in use, stop the other copy with **Ctrl+C**.
+- **The phone does not connect:** Start the Streams server in Nikki Streams. Check the session ID, current phone address, port, and Wi-Fi. Some guest Wi-Fi networks block devices from connecting to each other.
+- **No sensor readings appear:** Enable Accelerometer, Gyroscope, and Linear Acceleration in Nikki Streams. Wait for live readings before pressing Start.
+- **The game reports invalid or stale readings:** Check that the phone server is still running and sending data. The round stops safely if readings are invalid or stop arriving.
+- **The alarm is silent:** Check the sound switch, computer volume, and browser audio settings. The alarm is generated locally and needs no audio file.
+- **The connection drops:** The round stops and does not count as a win. Restart the Streams server and the Python bridge, then try again.
+
+## Testing and limits
+
+The project owner has confirmed that the local checks, phone connection, and gameplay tests passed. Results can depend on the phone, its current address, Wi-Fi, and Nikki Streams settings. Repeat the checks in [TESTING.md](TESTING.md) after changing any of these. See [PYTHON_SETUP.md](PYTHON_SETUP.md) for extra setup help.
+
+Test a still round through the full timer, then test a movement-triggered loss and alarm. Also check Stop, Reset, sensitivity settings, and what happens when the phone disconnects. Do not use this game as a real theft alarm.
